@@ -215,3 +215,54 @@ def reshape_conv2d_weights(weights: torch.Tensor) -> torch.Tensor:
                         ] = fltr
 
     return reshaped
+
+
+def Error2IO_Current(
+        datum: Tensor,
+        max_current: float = 0.8,
+        base_current: float = 0.15,
+        error_max: float = 10,
+        # TODO  how to normalize and whether to add P_max parameter
+        P_max:float = 6
+) -> list:
+    """
+    将error 以一定规则转化为输入到IO当中的电流信号。（未经过编码的）
+    转换前后shape保持不变
+
+
+    返回一个list，list[1] 中存储 error对应的主动肌肉的电流（给IO细胞的电流输入）
+                 list[2] 中存储error对应的拮抗肌肉的电流 （给 IO_Anti细胞的电流输入）
+    :param datum: 此时刻的error值 shape 为[n1,n2,n3,....]  (1,n)   n为要输入的神经元个数  目前我们应该输入的shape为 [1,IO.n]
+    :param exp_constant: 转化曲线中sigmoid的时间常数
+    :param max_current:  转化曲线中电流最大值
+    :param base_current: 转化曲线静默时的电流值
+    :param base_current: 输出的最大值（此处为气压最大值）
+    :return list={ current,current_anti}
+
+    """
+    shape = list(datum.shape)
+    print(shape)
+    Out = []
+    Current = torch.zeros_like(datum)
+    Current_Anti = torch.zeros_like(datum)
+    # norm
+    datum /= error_max
+
+    Current.masked_fill_(datum[0] > 0,
+                         base_current+max_current*(1+torch.exp(-10*datum[0]/P_max+4))
+                         )
+
+    Current_Anti.masked_fill_(datum[0] < 0,
+                              base_current + max_current * (1 + torch.exp(10 * datum[0] / P_max + 4))
+                              )
+    # TODO 简化了静息状态的操作
+    Current.masked_fill_(datum <= 0,base_current)
+    Current_Anti.masked_fill_(datum >= 0, base_current)
+    Out.append(Current)
+    Out.append(Current_Anti)
+    return Out
+
+
+
+
+

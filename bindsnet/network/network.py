@@ -85,7 +85,7 @@ class Network(torch.nn.Module):
         self,
         dt: float = 1.0,
         batch_size: int = 1,
-        learning: bool = True,
+        learning: bool = True,    # 默认开启训练模式
         reward_fn: Optional[Type[AbstractReward]] = None,
     ) -> None:
         # language=rst
@@ -103,9 +103,9 @@ class Network(torch.nn.Module):
         self.dt = dt
         self.batch_size = batch_size
 
-        self.layers = {}
-        self.connections = {}
-        self.monitors = {}
+        self.layers = {}       # 可以查看层
+        self.connections = {}  # 可以查看连接
+        self.monitors = {}     # 可以查看添加的监视器
 
         self.train(learning)
 
@@ -126,8 +126,8 @@ class Network(torch.nn.Module):
         self.add_module(name, layer)
 
         layer.train(self.learning)
-        layer.compute_decays(self.dt)
-        layer.set_batch_size(self.batch_size)
+        layer.compute_decays(self.dt)   # 根据步长计算 trace 的衰减速率
+        layer.set_batch_size(self.batch_size)   # 给出 每一批数据的个数
 
     def add_connection(
         self, connection: AbstractConnection, source: str, target: str
@@ -205,7 +205,7 @@ class Network(torch.nn.Module):
         virtual_file.seek(0)
         return torch.load(virtual_file)
 
-    def _get_inputs(self, layers: Iterable = None) -> Dict[str, torch.Tensor]:
+    def _get_inputs(self, layers: Iterable = None) -> Dict[str, torch.Tensor]:   # 得到每一层由上一层来的输入
         # language=rst
         """
         Fetches outputs from network layers to use as input to downstream layers.
@@ -244,7 +244,7 @@ class Network(torch.nn.Module):
                 else:
                     inputs[c[1]] += self.connections[c].compute(source.s)
 
-        return inputs
+        return inputs     #
 
     def run(
         self, inputs: Dict[str, torch.Tensor], time: int, one_step=False, **kwargs
@@ -430,7 +430,7 @@ class Network(torch.nn.Module):
         """
         Sets the node in training mode.
 
-        :param mode: Turn training on or off.
+        :param mode:                                                                                                                                                                                                     Turn training on or off.
 
         :return: ``self`` as specified in ``torch.nn.Module``.
         """

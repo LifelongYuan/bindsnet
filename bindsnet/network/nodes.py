@@ -2,7 +2,8 @@ from abc import ABC, abstractmethod
 from functools import reduce
 from operator import mul
 from typing import Iterable, Optional, Union
-
+from random import *
+import numpy as np
 import torch
 
 
@@ -18,8 +19,8 @@ class Nodes(torch.nn.Module):
         shape: Optional[Iterable[int]] = None,
         traces: bool = False,
         traces_additive: bool = False,
-        tc_trace: Union[float, torch.Tensor] = 20.0,
-        trace_scale: Union[float, torch.Tensor] = 1.0,
+        tc_trace: Union[float, torch.Tensor] = 20.0,  # 完成 spike之后指数衰减的时间常数
+        trace_scale: Union[float, torch.Tensor] = 1.0,# add的幅度
         sum_input: bool = False,
         learning: bool = True,
         **kwargs,
@@ -159,6 +160,11 @@ class Nodes(torch.nn.Module):
         :param bool mode: Turn training on or off
         :return: self as specified in `torch.nn.Module`
         """
+
+
+
+
+
         self.learning = mode
         return super().train(mode)
 
@@ -228,6 +234,65 @@ class Input(Nodes, AbstractInput):
         """
         super().reset_state_variables()
 
+class IO_Input(Nodes, AbstractInput):
+    # language=rst
+    """
+    Layer of nodes with user-specified spiking behavior.
+    """
+
+    def __init__(
+            self,
+            n: Optional[int] = None,
+            shape: Optional[Iterable[int]] = None,
+            traces: bool = False,
+            traces_additive: bool = False,
+            tc_trace: Union[float, torch.Tensor] = 20.0,
+            trace_scale: Union[float, torch.Tensor] = 1.0,
+            sum_input: bool = False,
+            **kwargs,
+    ) -> None:
+        # language=rst
+        """
+        Instantiates a layer of input neurons.
+
+        :param n: The number of neurons in the layer.
+        :param shape: The dimensionality of the layer.
+        :param traces: Whether to record decaying spike traces.
+        :param traces_additive: Whether to record spike traces additively.
+        :param tc_trace: Time constant of spike trace decay.
+        :param trace_scale: Scaling factor for spike trace.
+        :param sum_input: Whether to sum all inputs.
+        """
+        super().__init__(
+            n=n,
+            shape=shape,
+            traces=traces,
+            traces_additive=traces_additive,
+            tc_trace=tc_trace,
+            trace_scale=trace_scale,
+            sum_input=sum_input,
+        )
+
+
+    def forward(self, x: torch.Tensor) -> None:
+        # language=rst
+        """
+        On each simulation step, set the spikes of the population equal to the inputs.
+
+        :param x: Inputs to the layer.
+        """
+        # Set spike occurrences to input values.
+        eps = torch.rand(self.shape)
+        self.s.masked_fill_((x-eps)>0,1)
+       # print(self.s)
+        super().forward(x)
+
+    def reset_state_variables(self) -> None:
+        # language=rst
+        """
+        Resets relevant state variables.
+        """
+        super().reset_state_variables()
 
 class McCullochPitts(Nodes):
     # language=rst
@@ -454,7 +519,7 @@ class LIFNodes(Nodes):
         :param thresh: Spike threshold voltage.
         :param rest: Resting membrane voltage.
         :param reset: Post-spike reset voltage.
-        :param refrac: Refractory (non-firing) period of the neuron.
+        :param refrac: Refractory (non-firing) period of the neuron.   refrac period 不应期
         :param tc_decay: Time constant of neuron voltage decay.
         :param lbound: Lower bound of the voltage.
         """
@@ -500,6 +565,7 @@ class LIFNodes(Nodes):
 
     def forward(self, x: torch.Tensor) -> None:
         # language=rst
+
         """
         Runs a single simulation step.
 
@@ -509,25 +575,26 @@ class LIFNodes(Nodes):
         self.v = self.decay * (self.v - self.rest) + self.rest
 
         # Integrate inputs.
-        x.masked_fill_(self.refrac_count > 0, 0.0)
+        x.masked_fill_(self.refrac_count > 0, 0.0)   # 未 跳出不应期的输入 视为没有
+
 
         # Decrement refractory counters.
-        self.refrac_count -= self.dt
+        self.refrac_count -= self.dt  # 不应期counter减少
 
-        self.v += x  # interlaced
+        self.v += x  # interlaced    在原先恢复的电位基础上再加一个电压（指的应该是局部电位——具有可加性的电位）
 
         # Check for spiking neurons.
-        self.s = self.v >= self.thresh
+        self.s = self.v >= self.thresh   # 得到bool的spike
 
         # Refractoriness and voltage reset.
-        self.refrac_count.masked_fill_(self.s, self.refrac)
-        self.v.masked_fill_(self.s, self.reset)
+        self.refrac_count.masked_fill_(self.s, self.refrac)    # 重置不应期时间
+        self.v.masked_fill_(self.s, self.reset)                # 电压恢复到静息电位
 
         # Voltage clipping to lower bound.
-        if self.lbound is not None:
+        if self.lbound is not None:                            #电压最低值
             self.v.masked_fill_(self.v < self.lbound, self.lbound)
 
-        super().forward(x)
+        super().forward(x)  # 计算 trace
 
     def reset_state_variables(self) -> None:
         # language=rst
@@ -1538,7 +1605,7 @@ class CSRMNodes(Nodes):
 
     def RectangularKernel(self, dt):
         t = torch.arange(0, self.res_window_size, dt)
-        kernelVec = 1 / (selftau * 2)
+        kernelVec = 1 / (self.tau * 2)
         return torch.flip(kernelVec, [0])
 
     def TriangularKernel(self, dt):

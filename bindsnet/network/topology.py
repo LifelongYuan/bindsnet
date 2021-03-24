@@ -114,7 +114,7 @@ class AbstractConnection(ABC, Module):
         pass
 
 
-class Connection(AbstractConnection):
+class Connection(AbstractConnection):    # full connection
     # language=rst
     """
     Specifies synapses between one or two populations of neurons.
@@ -152,12 +152,12 @@ class Connection(AbstractConnection):
         """
         super().__init__(source, target, nu, reduction, weight_decay, **kwargs)
 
-        w = kwargs.get("w", None)
-        if w is None:
-            if self.wmin == -np.inf or self.wmax == np.inf:
-                w = torch.clamp(torch.rand(source.n, target.n), self.wmin, self.wmax)
+        w = kwargs.get("w", None)          # 此处产生  w , 根据 source 和 target 的形状产生对应的矩阵
+        if w is None:    # 若未设置w初值
+            if self.wmin == -np.inf or self.wmax == np.inf:    # 若w的上下限未被全部设置
+                w = torch.clamp(torch.rand(source.n, target.n), self.wmin, self.wmax)    # 包含了从区间0-1 中的随机数作为初值
             else:
-                w = self.wmin + torch.rand(source.n, target.n) * (self.wmax - self.wmin)
+                w = self.wmin + torch.rand(source.n, target.n) * (self.wmax - self.wmin) # 设置上下限
         else:
             if self.wmin != -np.inf or self.wmax != np.inf:
                 w = torch.clamp(torch.as_tensor(w), self.wmin, self.wmax)
@@ -173,7 +173,7 @@ class Connection(AbstractConnection):
         if isinstance(self.target, CSRMNodes):
             self.s_w = None
 
-    def compute(self, s: torch.Tensor) -> torch.Tensor:
+    def compute(self, s: torch.Tensor) -> torch.Tensor:   # 关键的函数：  输入： incoming spikes（从source层中获取） 输出： 经过权重乘积得到的输入target层的值
         # language=rst
         """
         Compute pre-activations given spikes using connection weights.
@@ -184,7 +184,7 @@ class Connection(AbstractConnection):
         """
         # Compute multiplication of spike activations by weights and add bias.
         if self.b is None:
-            post = s.view(s.size(0), -1).float() @ self.w
+            post = s.view(s.size(0), -1).float() @ self.w      # @ :matrix multi vector
         else:
             post = s.view(s.size(0), -1).float() @ self.w + self.b
         return post.view(s.size(0), *self.target.shape)

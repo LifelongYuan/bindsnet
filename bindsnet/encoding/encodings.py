@@ -24,6 +24,7 @@ def single(
     :param sparsity: Sparsity of the input representation. 0 for no spikes and 1 for all
         spikes.
     :return: Tensor of shape ``[time, n_1, ..., n_k]``.
+
     """
     time = int(time / dt)
     shape = list(datum.shape)
@@ -72,7 +73,6 @@ def bernoulli(
     """
     # Setting kwargs.
     max_prob = kwargs.get("max_prob", 1.0)
-
     assert 0 <= max_prob <= 1, "Maximum firing probability must be in range [0, 1]"
     assert (datum >= 0).all(), "Inputs must be non-negative"
 
