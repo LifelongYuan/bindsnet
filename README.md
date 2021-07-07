@@ -4,7 +4,7 @@
 3. 学习方法
 4. matlab交互
 ![matlab交互](https://images.gitee.com/uploads/images/2021/0423/103538_f223e7e2_8871149.png "通讯原理图.png")
-try and run CereSNN.py !
+try and run CereSNN.py ! The pth file will be stored in PTH file in default
 
 
 

@@ -3,7 +3,7 @@ from typing import Tuple, Dict, Any
 import numpy as np
 import torch
 from torch._six import container_abcs, string_classes
-
+import os
 from ..network import Network
 from ..network.monitors import Monitor
 
@@ -61,7 +61,10 @@ class BasePipeline:
         self.network = network
 
         # Network saving handles caching of intermediate results.
-        self.save_dir = kwargs.get("save_dir", "network.pt")
+        self.save_root = kwargs.get("save_dir", "PTH")
+        self.rand_seed = np.random.randint(low=1000,high=2000)
+        self.save_root += "/{}".format(str(self.rand_seed))
+        os.makedirs(self.save_root)
         self.save_interval = kwargs.get("save_interval", None)
 
         # Handles plotting of all layer spikes and voltages.
@@ -111,7 +114,7 @@ class BasePipeline:
         self.step_count = 0
 
         self.epoch += 1
-        self.save_dir = "network_epoch_{}.pt".format(self.epoch)
+        self.save_dir = self.save_root + "/epoch_{}.pt".format(self.epoch)
 
     def step(self, batch: Any, **kwargs) -> Any:
         # language=rst

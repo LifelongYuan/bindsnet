@@ -178,8 +178,9 @@ T.generate()
 env = MuscleEnvironment()
 My_pipe = MusclePipeline(network=network,
                          environment=env,
-                         save_dir="network.pt",
-                         save_interval=20,
+                         save_dir="PTH",
+                         sim_name='actuator_2',
+                         save_interval=1,
                          print_interval=1,
                          plot_interval=None,
                          plot_config={"data_step": True, "data_length": 50, "volts_type": "line"},

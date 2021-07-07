@@ -440,7 +440,7 @@ class MusclePipeline(BasePipeline):
 
         # generate trajectory
         self.planner.generate()
-        self.env.start(sim_name='actuator_2')
+        self.env.start(sim_name=kwargs.get("sim_name", "actuator_2"))
         self.REC_DICT = {"error": 0.0, "curr": 0.0, "curr_anti": 0.0}
         self.REC = {"Pressure": [], "Anti_Pressure": [], "input": [], "error": [], "tout": []}  # record
 
