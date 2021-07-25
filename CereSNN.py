@@ -1,6 +1,6 @@
 import torch
 import matplotlib.pyplot as plt
-
+import numpy
 from bindsnet.encoding.encodings import bernoulli_RBF, poisson_IO, IO_Current2spikes, Decode_Output
 from bindsnet.network import Network
 from bindsnet.network.nodes import Input, LIFNodes, LIF_Train
