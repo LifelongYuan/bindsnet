@@ -5,3 +5,4 @@ PTH
 venv
 bindsnet/.idea
 slprj
+__pycache__
